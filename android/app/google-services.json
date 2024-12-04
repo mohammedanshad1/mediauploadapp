@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "937982195453",
+    "project_id": "mediaupload-78ae4",
+    "storage_bucket": "mediaupload-78ae4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:937982195453:android:22e603ec7a1a6930c2f094",
+        "android_client_info": {
+          "package_name": "com.marinodai.mediauploadapp.mediauploadapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAefQhnKsGfPIapH2afFhYER6pcnKKO1KE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
