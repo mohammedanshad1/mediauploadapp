@@ -14,8 +14,7 @@ class _FilesListScreenState extends State<FilesListScreen> {
   final MediaViewModel _mediaViewModel = MediaViewModel();
   List<String> _files = [];
   String _errorMessage = '';
-  VideoPlayerController? _videoPlayerController;
-  bool _isVideoPlaying = false;
+  Map<String, VideoPlayerController> _videoControllers = {};
 
   @override
   void initState() {
@@ -37,32 +36,26 @@ class _FilesListScreenState extends State<FilesListScreen> {
   }
 
   void _playVideo(String videoUrl) {
-    if (_videoPlayerController != null) {
-      _videoPlayerController!.dispose();
+    if (_videoControllers[videoUrl] != null) {
+      _videoControllers[videoUrl]!.play();
+    } else {
+      _videoControllers[videoUrl] = VideoPlayerController.network(videoUrl)
+        ..initialize().then((_) {
+          setState(() {
+            _videoControllers[videoUrl]!.play();
+          });
+        }).catchError((error) {
+          debugPrint('Video initialization error: $error');
+          setState(() {
+            _errorMessage = 'Could not play video. Error: $error';
+          });
+        });
     }
-    
-    debugPrint('Attempting to play video: $videoUrl');
-    
-    _videoPlayerController = VideoPlayerController.network(videoUrl)
-      ..initialize().then((_) {
-        setState(() {
-          _isVideoPlaying = true;
-          _videoPlayerController!.play();
-        });
-      }).catchError((error) {
-        debugPrint('Video initialization error: $error');
-        setState(() {
-          _errorMessage = 'Could not play video. Error: $error';
-        });
-      });
   }
 
-  void _pauseVideo() {
-    if (_videoPlayerController != null) {
-      _videoPlayerController!.pause();
-      setState(() {
-        _isVideoPlaying = false;
-      });
+  void _pauseVideo(String videoUrl) {
+    if (_videoControllers[videoUrl] != null) {
+      _videoControllers[videoUrl]!.pause();
     }
   }
 
@@ -78,7 +71,9 @@ class _FilesListScreenState extends State<FilesListScreen> {
 
   @override
   void dispose() {
-    _videoPlayerController?.dispose();
+    _videoControllers.forEach((key, controller) {
+      controller.dispose();
+    });
     super.dispose();
   }
 
@@ -116,16 +111,21 @@ class _FilesListScreenState extends State<FilesListScreen> {
                   ),
                   leading: isVideo
                       ? GestureDetector(
-                          onTap: () => _openFullScreenVideo(fileUrl),
-                          child: Image.network(
-                            fileUrl,
-                            width: responsive.wp(15),
-                            height: responsive.hp(8),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(Icons.error,
-                                  size: responsive.wp(10));
-                            },
+                          onTap: () => _playVideo(fileUrl),
+                          onDoubleTap: () => _pauseVideo(fileUrl),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 9,
+                            child: _videoControllers[fileUrl] != null &&
+                                    _videoControllers[fileUrl]!
+                                        .value
+                                        .isInitialized
+                                ? VideoPlayer(_videoControllers[fileUrl]!)
+                                : Container(
+                                    color: Colors.black,
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
                           ),
                         )
                       : Image.network(
@@ -147,7 +147,8 @@ class _FilesListScreenState extends State<FilesListScreen> {
 class FullScreenVideoPlayer extends StatefulWidget {
   final String videoUrl;
 
-  const FullScreenVideoPlayer({Key? key, required this.videoUrl}) : super(key: key);
+  const FullScreenVideoPlayer({Key? key, required this.videoUrl})
+      : super(key: key);
 
   @override
   _FullScreenVideoPlayerState createState() => _FullScreenVideoPlayerState();

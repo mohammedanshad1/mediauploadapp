@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:simple_circular_progress_bar/simple_circular_progress_bar.dart';
 import 'package:mediauploadapp/constants/app_typography.dart';
 import 'package:mediauploadapp/utils/responsive.dart';
 import 'package:mediauploadapp/view/file_view.dart';
@@ -18,8 +16,14 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
   bool _isUploading = false;
 
   void _pickImage() async {
-    await _mediaViewModel.pickImage();
-    setState(() {});
+    try {
+      await _mediaViewModel.pickImage();
+      setState(() {});
+    } catch (e) {
+      setState(() {
+        _uploadStatus = e.toString();
+      });
+    }
   }
 
   void _uploadMedia() async {
@@ -62,7 +66,7 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
               children: [
                 _buildCard(
                   icon: Icons.image,
-                  text: 'Select Image',
+                  text: 'Select Files',
                   onTap: _pickImage,
                   responsive: responsive,
                 ),
@@ -96,20 +100,28 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   _mediaViewModel.mediaModel != null
-                      ? Image.file(
-                          File(_mediaViewModel.mediaModel!.filePath),
-                          height: responsive.hp(20),
+                      ? Text(
+                          'Selected File: ${_mediaViewModel.mediaModel!.filePath.split('/').last}',
+                          style: AppTypography.outfitRegular,
                         )
                       : Text('', style: AppTypography.outfitRegular),
                   SizedBox(height: responsive.hp(2)),
                   _isUploading
-                      ? SimpleCircularProgressBar(
-                          progressColors: [Colors.blue],
-                          size: responsive.wp(20),
-                          progressStrokeWidth: 10,
-                          backStrokeWidth: 10,
-                          valueNotifier: ValueNotifier(
-                              _mediaViewModel.uploadProgress * 100),
+                      ? Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            LinearProgressIndicator(
+                              value: _mediaViewModel.uploadProgress,
+                              backgroundColor: Colors.grey[300],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.blue), // Change color when complete
+                            ),
+                            Text(
+                              '${(_mediaViewModel.uploadProgress * 100).toStringAsFixed(0)}%',
+                              style: AppTypography.outfitMedium
+                                  .copyWith(color: Colors.white),
+                            ),
+                          ],
                         )
                       : Text(_uploadStatus, style: AppTypography.outfitRegular),
                 ],
