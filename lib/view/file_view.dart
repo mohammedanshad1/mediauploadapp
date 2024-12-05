@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mediauploadapp/constants/app_typography.dart';
 import 'package:mediauploadapp/utils/responsive.dart';
 import 'package:mediauploadapp/viewmodel/media_viewmodel.dart';
@@ -128,19 +129,48 @@ class _FilesListScreenState extends State<FilesListScreen> {
                                   ),
                           ),
                         )
-                      : Image.network(
-                          fileUrl,
-                          width: responsive.wp(15),
-                          height: responsive.hp(8),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(Icons.error, size: responsive.wp(10));
+                      : FutureBuilder<bool>(
+                          future: _checkImageUrl(fileUrl),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return CircularProgressIndicator();
+                            } else if (snapshot.hasError || !snapshot.data!) {
+                              return Icon(Icons.error, size: responsive.wp(10));
+                            } else {
+                              return Image.network(
+                                fileUrl,
+                                width: responsive.wp(15),
+                                height: responsive.hp(8),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(Icons.error,
+                                      size: responsive.wp(10));
+                                },
+                              );
+                            }
                           },
                         ),
+                  trailing: isVideo
+                      ? IconButton(
+                          icon: Icon(Icons.fullscreen),
+                          onPressed: () => _openFullScreenVideo(fileUrl),
+                        )
+                      : null,
                 );
               },
             ),
     );
+  }
+
+  Future<bool> _checkImageUrl(String url) async {
+    try {
+      final response = await NetworkAssetBundle(Uri.parse(url)).load(url);
+      return response != null;
+    } catch (e) {
+      debugPrint('Image URL check error: $e');
+      return false;
+    }
   }
 }
 
@@ -170,6 +200,11 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
         setState(() {
           _videoPlayerController.play();
           _isPlaying = true;
+        });
+      }).catchError((error) {
+        debugPrint('Video initialization error: $error');
+        setState(() {
+          _isPlaying = false;
         });
       });
 

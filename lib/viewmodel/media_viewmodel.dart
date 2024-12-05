@@ -17,12 +17,7 @@ class MediaViewModel {
   Future<void> pickImage() async {
     final pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
     if (pickedFile != null) {
-      final file = File(pickedFile.path);
-      if (file.lengthSync() >= 100 * 1024 * 1024) {
-        _mediaModel = MediaModel(filePath: pickedFile.path);
-      } else {
-        throw Exception('File size must be at least 100MB');
-      }
+      _mediaModel = MediaModel(filePath: pickedFile.path);
     }
   }
 
