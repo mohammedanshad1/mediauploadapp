@@ -36,5 +36,5 @@ A Flutter application for uploading and managing media files. This app supports 
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/media-upload-app.git
+   git clone (https://github.com/mohammedanshad1/mediauploadapp.git)
    cd media-upload-app
