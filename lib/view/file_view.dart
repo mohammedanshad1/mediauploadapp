@@ -16,6 +16,7 @@ class _FilesListScreenState extends State<FilesListScreen> {
   List<String> _files = [];
   String _errorMessage = '';
   Map<String, VideoPlayerController> _videoControllers = {};
+  Set<String> _playingVideos = {};
 
   @override
   void initState() {
@@ -36,14 +37,14 @@ class _FilesListScreenState extends State<FilesListScreen> {
     }
   }
 
-  void _playVideo(String videoUrl) {
-    if (_videoControllers[videoUrl] != null) {
-      _videoControllers[videoUrl]!.play();
-    } else {
+  void _toggleVideoPlayback(String videoUrl) {
+    if (_videoControllers[videoUrl] == null) {
+      // Initialize video controller if not exists
       _videoControllers[videoUrl] = VideoPlayerController.network(videoUrl)
         ..initialize().then((_) {
           setState(() {
             _videoControllers[videoUrl]!.play();
+            _playingVideos.add(videoUrl);
           });
         }).catchError((error) {
           debugPrint('Video initialization error: $error');
@@ -51,12 +52,17 @@ class _FilesListScreenState extends State<FilesListScreen> {
             _errorMessage = 'Could not play video. Error: $error';
           });
         });
-    }
-  }
-
-  void _pauseVideo(String videoUrl) {
-    if (_videoControllers[videoUrl] != null) {
-      _videoControllers[videoUrl]!.pause();
+    } else {
+      // Toggle play/pause if controller exists
+      setState(() {
+        if (_playingVideos.contains(videoUrl)) {
+          _videoControllers[videoUrl]!.pause();
+          _playingVideos.remove(videoUrl);
+        } else {
+          _videoControllers[videoUrl]!.play();
+          _playingVideos.add(videoUrl);
+        }
+      });
     }
   }
 
@@ -112,22 +118,27 @@ class _FilesListScreenState extends State<FilesListScreen> {
                   ),
                   leading: isVideo
                       ? GestureDetector(
-                          onTap: () => _playVideo(fileUrl),
-                          onDoubleTap: () => _pauseVideo(fileUrl),
-                          child: AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: _videoControllers[fileUrl] != null &&
-                                    _videoControllers[fileUrl]!
-                                        .value
-                                        .isInitialized
-                                ? VideoPlayer(_videoControllers[fileUrl]!)
-                                : Container(
-                                    color: Colors.black,
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
+                          onTap: () => _toggleVideoPlayback(fileUrl),
+                          child: _videoControllers[fileUrl] != null &&
+                                  _videoControllers[fileUrl]!
+                                      .value
+                                      .isInitialized &&
+                                  _playingVideos.contains(fileUrl)
+                              ? AspectRatio(
+                                  aspectRatio: 16 / 9,
+                                  child:
+                                      VideoPlayer(_videoControllers[fileUrl]!),
+                                )
+                              : Container(
+                                  width: responsive.wp(15),
+                                  height: responsive.hp(8),
+                                  color: Colors.black,
+                                  child: Icon(
+                                    Icons.play_circle_outline,
+                                    color: Colors.white,
+                                    size: responsive.wp(10),
                                   ),
-                          ),
+                                ),
                         )
                       : FutureBuilder<bool>(
                           future: _checkImageUrl(fileUrl),
