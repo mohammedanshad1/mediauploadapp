@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_icon_snackbar/flutter_icon_snackbar.dart';
 import 'package:mediauploadapp/constants/app_typography.dart';
 import 'package:mediauploadapp/utils/responsive.dart';
 import 'package:mediauploadapp/view/file_view.dart';
 import 'package:mediauploadapp/viewmodel/media_viewmodel.dart';
+import 'package:mediauploadapp/widgets/custom_snackbar.dart'; // Import the custom snackbar
 
 class MediaUploadScreen extends StatefulWidget {
   @override
@@ -42,6 +44,12 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
       setState(() {
         _uploadStatus = e.toString();
       });
+      CustomSnackBar.show(
+        context,
+        snackBarType: SnackBarType.fail,
+        label: 'Error picking file: $e',
+        bgColor: Colors.red,
+      );
     }
   }
 
@@ -50,11 +58,41 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
       _isUploading = true;
     });
 
-    String status = await _mediaViewModel.uploadMedia();
-    setState(() {
-      _uploadStatus = status;
-      _isUploading = false;
-    });
+    try {
+      String status = await _mediaViewModel.uploadMedia();
+      setState(() {
+        _uploadStatus = status;
+        _isUploading = false;
+      });
+
+      // Show success snackbar if upload is successful
+      if (status == 'File uploaded successfully') {
+        CustomSnackBar.show(
+          context,
+          snackBarType: SnackBarType.success,
+          label: 'File uploaded successfully',
+          bgColor: Colors.green,
+        );
+      } else {
+        CustomSnackBar.show(
+          context,
+          snackBarType: SnackBarType.fail,
+          label: status,
+          bgColor: Colors.red,
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _uploadStatus = 'Error uploading file: $e';
+        _isUploading = false;
+      });
+      CustomSnackBar.show(
+        context,
+        snackBarType: SnackBarType.fail,
+        label: 'Error uploading file: $e',
+        bgColor: Colors.red,
+      );
+    }
   }
 
   void _navigateToFilesList() {
@@ -143,7 +181,7 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
                             ),
                           ],
                         )
-                      : Text(_uploadStatus, style: AppTypography.outfitRegular),
+                      : Text("", style: AppTypography.outfitRegular),
                 ],
               ),
             ),
