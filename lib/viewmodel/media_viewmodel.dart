@@ -40,11 +40,14 @@ class MediaViewModel extends ChangeNotifier {
         onSendProgress: (sent, total) {
           _uploadProgress = sent / total;
           notifyListeners(); // Notify UI of progress changes
-          _showUploadProgressNotification(_uploadProgress);
+          _showUploadProgressNotification(
+              _uploadProgress); // Update notification
         },
       );
 
       if (response.statusCode == 200) {
+        // Ensure the notification shows 100% when upload is complete
+        _showUploadProgressNotification(1.0);
         _showUploadCompleteNotification('File uploaded successfully');
         return 'File uploaded successfully';
       } else {
@@ -78,23 +81,24 @@ class MediaViewModel extends ChangeNotifier {
   void _showUploadProgressNotification(double progress) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'upload_progress_channel',
-      'Upload Progress',
+      'upload_progress_channel', // Unique channel ID
+      'Upload Progress', // Channel name
       importance: Importance.low,
       priority: Priority.low,
       onlyAlertOnce: true,
       showProgress: true,
-      maxProgress: 100,
-      progress: 0,
+      maxProgress: 100, // Set the maximum progress to 100
+      progress: 0, // Initial progress
     );
 
     const NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
+    // Update the notification with the current progress
     await _flutterLocalNotificationsPlugin.show(
-      0,
+      0, // Notification ID
       'Uploading...',
-      '${(progress * 100).toStringAsFixed(2)}%',
+      '${(progress * 100).toStringAsFixed(0)}%',
       platformChannelSpecifics,
       payload: 'upload_progress',
     );
