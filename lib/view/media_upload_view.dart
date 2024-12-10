@@ -12,13 +12,32 @@ class MediaUploadScreen extends StatefulWidget {
 class _MediaUploadScreenState extends State<MediaUploadScreen> {
   final MediaViewModel _mediaViewModel = MediaViewModel();
   String _uploadStatus = '';
-  List<String> _files = [];
   bool _isUploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _mediaViewModel.addListener(_updateUI);
+  }
+
+  @override
+  void dispose() {
+    _mediaViewModel.removeListener(_updateUI);
+    super.dispose();
+  }
+
+  void _updateUI() {
+    setState(() {
+      _uploadStatus = _mediaViewModel.uploadProgress == 1.0
+          ? 'Upload Complete'
+          : _uploadStatus;
+      _isUploading = _mediaViewModel.uploadProgress < 1.0;
+    });
+  }
 
   void _pickImage() async {
     try {
       await _mediaViewModel.pickImage();
-      setState(() {});
     } catch (e) {
       setState(() {
         _uploadStatus = e.toString();
@@ -112,14 +131,15 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
                           children: [
                             LinearProgressIndicator(
                               value: _mediaViewModel.uploadProgress,
-                              backgroundColor: Colors.grey[300],
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.blue), // Change color when complete
+                              backgroundColor: Colors.grey.shade300,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.blue),
                             ),
                             Text(
                               '${(_mediaViewModel.uploadProgress * 100).toStringAsFixed(0)}%',
-                              style: AppTypography.outfitMedium
-                                  .copyWith(color: Colors.white),
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         )

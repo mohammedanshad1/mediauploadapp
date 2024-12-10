@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mediauploadapp/model/media_upload.dart';
 
-class MediaViewModel {
+class MediaViewModel extends ChangeNotifier {
   final ImagePicker _picker = ImagePicker();
   MediaModel? _mediaModel;
   double _uploadProgress = 0.0;
@@ -18,6 +19,7 @@ class MediaViewModel {
     final pickedFile = await _picker.pickVideo(source: ImageSource.gallery);
     if (pickedFile != null) {
       _mediaModel = MediaModel(filePath: pickedFile.path);
+      notifyListeners();
     }
   }
 
@@ -37,6 +39,7 @@ class MediaViewModel {
         data: formData,
         onSendProgress: (sent, total) {
           _uploadProgress = sent / total;
+          notifyListeners(); // Notify UI of progress changes
           _showUploadProgressNotification(_uploadProgress);
         },
       );
@@ -45,7 +48,8 @@ class MediaViewModel {
         _showUploadCompleteNotification('File uploaded successfully');
         return 'File uploaded successfully';
       } else {
-        _showUploadCompleteNotification('File upload failed: ${response.data['message']}');
+        _showUploadCompleteNotification(
+            'File upload failed: ${response.data['message']}');
         return 'File upload failed: ${response.data['message']}';
       }
     } catch (e) {
@@ -53,6 +57,7 @@ class MediaViewModel {
       return 'Error uploading file: $e';
     } finally {
       _uploadProgress = 0.0; // Reset progress after upload
+      notifyListeners();
     }
   }
 
