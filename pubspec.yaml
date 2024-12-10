@@ -45,6 +45,7 @@ dependencies:
   http: ^1.2.2
   simple_circular_progress_bar: ^1.0.2
   flutter_local_notifications: ^18.0.1
+  video_thumbnail: ^0.5.3
 
 
 dev_dependencies:

@@ -4,7 +4,8 @@ import 'package:mediauploadapp/constants/app_typography.dart';
 import 'package:mediauploadapp/utils/responsive.dart';
 import 'package:mediauploadapp/viewmodel/media_viewmodel.dart';
 import 'package:video_player/video_player.dart';
-import 'package:flutter/foundation.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'dart:typed_data';
 
 class FilesListScreen extends StatefulWidget {
   @override
@@ -17,6 +18,7 @@ class _FilesListScreenState extends State<FilesListScreen> {
   String _errorMessage = '';
   Map<String, VideoPlayerController> _videoControllers = {};
   Set<String> _playingVideos = {};
+  Map<String, Uint8List?> _thumbnails = {};
 
   @override
   void initState() {
@@ -30,11 +32,33 @@ class _FilesListScreenState extends State<FilesListScreen> {
       setState(() {
         _files = files;
       });
+
+      // Generate thumbnails for video files
+      for (var fileUrl in _files) {
+        if (fileUrl.endsWith('.mp4')) {
+          _generateThumbnail(fileUrl);
+        }
+      }
     } catch (e) {
       setState(() {
         _errorMessage = 'Error fetching files: $e';
       });
     }
+  }
+
+  Future<Uint8List?> _generateThumbnail(String videoUrl) async {
+    final thumbnail = await VideoThumbnail.thumbnailData(
+      video: videoUrl,
+      imageFormat: ImageFormat.JPEG,
+      maxWidth: 128, // Adjust the size as needed
+      quality: 75,
+    );
+
+    setState(() {
+      _thumbnails[videoUrl] = thumbnail;
+    });
+
+    return thumbnail; // Return the generated thumbnail
   }
 
   void _toggleVideoPlayback(String videoUrl) {
@@ -91,7 +115,7 @@ class _FilesListScreenState extends State<FilesListScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -102,7 +126,7 @@ class _FilesListScreenState extends State<FilesListScreen> {
           ? Center(
               child: _errorMessage.isNotEmpty
                   ? Text(_errorMessage, style: AppTypography.outfitRegular)
-                  : CircularProgressIndicator(),
+                  : const CircularProgressIndicator(),
             )
           : ListView.builder(
               itemCount: _files.length,
@@ -118,35 +142,56 @@ class _FilesListScreenState extends State<FilesListScreen> {
                   ),
                   leading: isVideo
                       ? GestureDetector(
-                          onTap: () => _toggleVideoPlayback(fileUrl),
-                          child: _videoControllers[fileUrl] != null &&
-                                  _videoControllers[fileUrl]!
-                                      .value
-                                      .isInitialized &&
-                                  _playingVideos.contains(fileUrl)
-                              ? AspectRatio(
-                                  aspectRatio: 16 / 9,
-                                  child:
-                                      VideoPlayer(_videoControllers[fileUrl]!),
-                                )
-                              : Container(
-                                  width: responsive.wp(15),
-                                  height: responsive.hp(8),
-                                  color: Colors.black,
-                                  child: Icon(
-                                    Icons.play_circle_outline,
-                                    color: Colors.white,
-                                    size: responsive.wp(10),
-                                  ),
-                                ),
+                          onTap: () => _openFullScreenVideo(fileUrl),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              FutureBuilder<Uint8List?>(
+                                future: _thumbnails[fileUrl] != null
+                                    ? Future.value(_thumbnails[fileUrl])
+                                    : _generateThumbnail(fileUrl),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Container(
+                                      width: responsive.wp(15),
+                                      height: responsive.hp(8),
+                                      color: Colors.black,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  } else if (snapshot.hasData) {
+                                    return Image.memory(
+                                      snapshot.data!,
+                                      width: responsive.wp(15),
+                                      height: responsive.hp(8),
+                                      fit: BoxFit.cover,
+                                    );
+                                  } else {
+                                    return Container(
+                                      width: responsive.wp(15),
+                                      height: responsive.hp(8),
+                                      color: Colors.black,
+                                    );
+                                  }
+                                },
+                              ),
+                              Icon(
+                                Icons.play_circle_filled,
+                                color: Colors.white.withOpacity(0.8),
+                                size: responsive.wp(10),
+                              ),
+                            ],
+                          ),
                         )
                       : FutureBuilder<bool>(
                           future: _checkImageUrl(fileUrl),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
-                              return CircularProgressIndicator();
-                            } else if (snapshot.hasError || !snapshot.data!) {
+                              return const CircularProgressIndicator();
+                            } else if (snapshot.hasError || snapshot.data != true) {
                               return Icon(Icons.error, size: responsive.wp(10));
                             } else {
                               return Image.network(
@@ -162,12 +207,6 @@ class _FilesListScreenState extends State<FilesListScreen> {
                             }
                           },
                         ),
-                  trailing: isVideo
-                      ? IconButton(
-                          icon: Icon(Icons.fullscreen),
-                          onPressed: () => _openFullScreenVideo(fileUrl),
-                        )
-                      : null,
                 );
               },
             ),
@@ -184,7 +223,6 @@ class _FilesListScreenState extends State<FilesListScreen> {
     }
   }
 }
-
 class FullScreenVideoPlayer extends StatefulWidget {
   final String videoUrl;
 
