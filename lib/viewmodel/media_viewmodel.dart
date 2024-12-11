@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mediauploadapp/model/media_upload.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class MediaViewModel extends ChangeNotifier {
   final ImagePicker _picker = ImagePicker();
@@ -46,7 +48,6 @@ class MediaViewModel extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        // Ensure the notification shows 100% when upload is complete
         _showUploadProgressNotification(1.0);
         _showUploadCompleteNotification('File uploaded successfully');
         return 'File uploaded successfully';
@@ -61,6 +62,38 @@ class MediaViewModel extends ChangeNotifier {
     } finally {
       _uploadProgress = 0.0; // Reset progress after upload
       notifyListeners();
+    }
+  }
+
+  Future<void> pauseUpload() async {
+    if (_mediaModel == null) {
+      throw Exception('No file selected');
+    }
+
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:3000/upload/pause'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'identifier': 'your_upload_identifier'}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to pause upload: ${response.body}');
+    }
+  }
+
+  Future<void> resumeUpload() async {
+    if (_mediaModel == null) {
+      throw Exception('No file selected');
+    }
+
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:3000/upload/resume'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'identifier': 'your_upload_identifier'}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to resume upload: ${response.body}');
     }
   }
 
@@ -81,22 +114,21 @@ class MediaViewModel extends ChangeNotifier {
   void _showUploadProgressNotification(double progress) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'upload_progress_channel', // Unique channel ID
-      'Upload Progress', // Channel name
+      'upload_progress_channel',
+      'Upload Progress',
       importance: Importance.low,
       priority: Priority.low,
       onlyAlertOnce: true,
       showProgress: true,
-      maxProgress: 100, // Set the maximum progress to 100
-      progress: 0, // Initial progress
+      maxProgress: 100,
+      progress: 0,
     );
 
     const NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
-    // Update the notification with the current progress
     await _flutterLocalNotificationsPlugin.show(
-      0, // Notification ID
+      0,
       'Uploading...',
       '${(progress * 100).toStringAsFixed(0)}%',
       platformChannelSpecifics,

@@ -4,7 +4,7 @@ import 'package:mediauploadapp/constants/app_typography.dart';
 import 'package:mediauploadapp/utils/responsive.dart';
 import 'package:mediauploadapp/view/file_view.dart';
 import 'package:mediauploadapp/viewmodel/media_viewmodel.dart';
-import 'package:mediauploadapp/widgets/custom_snackbar.dart'; // Import the custom snackbar
+import 'package:mediauploadapp/widgets/custom_snackbar.dart';
 
 class MediaUploadScreen extends StatefulWidget {
   @override
@@ -65,7 +65,6 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
         _isUploading = false;
       });
 
-      // Show success snackbar if upload is successful
       if (status == 'File uploaded successfully') {
         CustomSnackBar.show(
           context,
@@ -90,6 +89,44 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
         context,
         snackBarType: SnackBarType.fail,
         label: 'Error uploading file: $e',
+        bgColor: Colors.red,
+      );
+    }
+  }
+
+  void _pauseUpload() async {
+    try {
+      await _mediaViewModel.pauseUpload();
+      CustomSnackBar.show(
+        context,
+        snackBarType: SnackBarType.alert,
+        label: 'Upload paused',
+        bgColor: Colors.blue,
+      );
+    } catch (e) {
+      CustomSnackBar.show(
+        context,
+        snackBarType: SnackBarType.fail,
+        label: 'Error pausing upload: $e',
+        bgColor: Colors.red,
+      );
+    }
+  }
+
+  void _resumeUpload() async {
+    try {
+      await _mediaViewModel.resumeUpload();
+      CustomSnackBar.show(
+        context,
+        snackBarType: SnackBarType.alert,
+        label: 'Upload resumed',
+        bgColor: Colors.blue,
+      );
+    } catch (e) {
+      CustomSnackBar.show(
+        context,
+        snackBarType: SnackBarType.fail,
+        label: 'Error resuming upload: $e',
         bgColor: Colors.red,
       );
     }
@@ -134,6 +171,18 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
                   responsive: responsive,
                 ),
                 _buildCard(
+                  icon: Icons.pause,
+                  text: 'Pause Upload',
+                  onTap: _pauseUpload,
+                  responsive: responsive,
+                ),
+                _buildCard(
+                  icon: Icons.play_arrow,
+                  text: 'Resume Upload',
+                  onTap: _resumeUpload,
+                  responsive: responsive,
+                ),
+                _buildCard(
                   icon: Icons.file_present,
                   text: 'Show Files',
                   onTap: _navigateToFilesList,
@@ -142,9 +191,7 @@ class _MediaUploadScreenState extends State<MediaUploadScreen> {
                 _buildCard(
                   icon: Icons.folder,
                   text: 'No Action',
-                  onTap: () {
-                    // Placeholder for additional functionality
-                  },
+                  onTap: () {},
                   responsive: responsive,
                 ),
               ],
