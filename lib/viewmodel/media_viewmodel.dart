@@ -37,7 +37,7 @@ class MediaViewModel extends ChangeNotifier {
       });
 
       var response = await dio.post(
-        'http://10.0.2.2:3000/upload',
+        'https://file-upload-api-7vv2.onrender.com/upload',
         data: formData,
         onSendProgress: (sent, total) {
           _uploadProgress = sent / total;
@@ -71,7 +71,7 @@ class MediaViewModel extends ChangeNotifier {
     }
 
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:3000/upload/pause'),
+      Uri.parse('https://file-upload-api-7vv2.onrender.com/upload/pause'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'identifier': 'your_upload_identifier'}),
     );
@@ -87,7 +87,7 @@ class MediaViewModel extends ChangeNotifier {
     }
 
     final response = await http.post(
-      Uri.parse('http://10.0.2.2:3000/upload/resume'),
+      Uri.parse('https://file-upload-api-7vv2.onrender.com/upload/resume'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'identifier': 'your_upload_identifier'}),
     );
@@ -99,7 +99,8 @@ class MediaViewModel extends ChangeNotifier {
 
   Future<List<String>> fetchFiles() async {
     try {
-      var response = await Dio().get('http://10.0.2.2:3000/files');
+      var response =
+          await Dio().get('https://file-upload-api-7vv2.onrender.com/files');
 
       if (response.statusCode == 200) {
         return List<String>.from(response.data['files']);
